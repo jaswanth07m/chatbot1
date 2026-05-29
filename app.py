@@ -2,9 +2,22 @@ import streamlit as st
 from groq import Groq
 from dotenv import load_dotenv
 import os
+from utils.loader import load_pdf
+from utils.embedder import create_embeddings
+from utils.retriever import build_index
+from utils.retriever import retrieve
 
-from pypdf import PdfReader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from sentence_transformers import SentenceTransformer
+
+
+@st.cache_resource
+def get_embedding_model():
+
+    return SentenceTransformer(
+        "all-MiniLM-L6-v2"
+    )
+
+embedding_model = get_embedding_model()
 #import chromadb
 
 st.set_page_config(
@@ -69,20 +82,6 @@ section[data-testid="stSidebar"] {
 </style>
 """, unsafe_allow_html=True)
 #pdf reader
-def read_pdf(file):
-
-    pdf = PdfReader(file)
-
-    text = ""
-
-    for page in pdf.pages:
-
-        page_text = page.extract_text()
-
-        if page_text:
-            text += page_text
-
-    return text
 
 
 # Load environment variables
@@ -128,6 +127,12 @@ with st.sidebar:
 
     if st.button("🗑 Clear Chat"):
         st.session_state.messages = []
+        if "chunks" in st.session_state:
+            del st.session_state.chunks
+
+        if "index" in st.session_state:
+            del st.session_state.index
+
         st.rerun()
 
     st.markdown("---")
@@ -141,24 +146,35 @@ with st.sidebar:
 
 
 #process pdf
-if uploaded_file:
+if (
+    uploaded_file
+    and "index" not in st.session_state
+):
 
-    text = read_pdf(uploaded_file)
+    chunks = load_pdf(
+        uploaded_file
+    )
+
+    embeddings = create_embeddings(
+        chunks
+    )
+
+    index = build_index(
+        embeddings
+    )
+
+    st.session_state.chunks = chunks
+
+    st.session_state.index = index
 
     st.sidebar.write(
-        f"Characters extracted: {len(text)}"
+        f"Chunks Created: {len(chunks)}"
     )
 
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,
-        chunk_overlap=50
+    st.sidebar.success(
+        "PDF Loaded Successfully!"
     )
 
-    chunks = splitter.split_text(text)
-
-    st.session_state.pdf_chunks = chunks
-
-    st.sidebar.success("PDF Loaded Successfully!")
 
 
 # Initialize chat history
@@ -195,40 +211,28 @@ if prompt:
 
         context = ""
 
-        if uploaded_file and "pdf_chunks" in st.session_state:
+        top_chunks = []
 
-            chunks = st.session_state.pdf_chunks
+        if (
+        uploaded_file
+        and "chunks" in st.session_state
+        ):
 
-            relevant_chunks = []
-
-            prompt_words = prompt.lower().split()
-
-            for chunk in chunks:
-
-                chunk_lower = chunk.lower()
-
-                score = sum(
-                    1 for word in prompt_words
-                    if word in chunk_lower
-                )
-
-                if score > 0:
-                    relevant_chunks.append(
-                        (score, chunk)
-                    )
-
-            relevant_chunks.sort(
-                reverse=True,
-                key=lambda x: x[0]
+            query_embedding = embedding_model.encode(
+                prompt
             )
 
-            top_chunks = [
-                chunk
-                for score, chunk
-                in relevant_chunks[:3]
-            ]
+            top_chunks = retrieve(
+                query_embedding,
+                st.session_state.index,
+                st.session_state.chunks,
+                k=3
+            )
 
-            context = "\n".join(top_chunks)
+            context = "\n".join(
+                top_chunks
+            )
+
 
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -275,12 +279,29 @@ if prompt:
 
             placeholder.markdown(full_text)
 
-        st.session_state.messages.append(
-            {
-                "role": "assistant",
-                "content": answer
-            }
-        )
+            st.session_state.messages.append(
+                {
+                    "role": "assistant",
+                    "content": answer
+                }
+            )
+
+            if top_chunks:
+
+                with st.expander(
+                    "📚 Retrieved Context"
+                ):
+
+                    for i, chunk in enumerate(
+                        top_chunks
+                    ):
+
+                        st.markdown(
+                            f"### Chunk {i+1}"
+                        )
+
+                        st.write(chunk)
 
     except Exception as e:
         st.error(f"Error: {e}")
+

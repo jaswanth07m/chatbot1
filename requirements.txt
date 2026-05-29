@@ -2,7 +2,7 @@ streamlit
 groq
 python-dotenv
 pypdf
-langchain
-langchain-community
 langchain-text-splitters
-chromadb
+sentence-transformers
+faiss-cpu
+numpy

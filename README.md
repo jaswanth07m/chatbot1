@@ -1,105 +1,29 @@
-# 🚀 AI Document Assistant
+# 🤖 AI Document Assistant (RAG Chatbot)
 
-An AI-powered chatbot built using Streamlit and Groq's Llama 3.3 model. The application allows users to chat with an AI assistant, upload PDF documents, and ask questions based on the uploaded content using a lightweight Retrieval-Augmented Generation (RAG) workflow.
+An AI-powered document assistant built using Streamlit, Groq Llama 3.3, FAISS, and Sentence Transformers.
 
-## 📌 Features
-
-* 🤖 AI Chatbot powered by Llama 3.3 via Groq API
-* 📄 PDF Upload and Processing
-* 🔍 Retrieval-Augmented Generation (RAG)
-* 💬 Chat History Support
-* 🎨 Custom Streamlit UI with Dark Theme
-* ⚡ Typing Animation for Responses
-* 🧠 General Knowledge Fallback when information is not found in the uploaded PDF
-* 📱 Responsive and User-Friendly Interface
+The chatbot allows users to upload PDF documents, ask questions about the document, and receive context-aware answers using Retrieval-Augmented Generation (RAG).
 
 ---
 
-## 🛠️ Tech Stack
+## 🚀 Features
 
-### Frontend
-
-* Streamlit
-
-### AI Model
-
-* Groq API
-* Llama 3.3 70B Versatile
-
-### PDF Processing
-
-* PyPDF
-
-### Text Processing
-
-* LangChain Text Splitters
-
-### Backend
-
-* Python
-
-### Environment Management
-
-* Python Dotenv
+- Interactive Streamlit Chat UI
+- Groq Llama 3.3 Integration
+- PDF Upload Support
+- PDF Text Extraction
+- Smart Text Chunking
+- Embedding Generation using Sentence Transformers
+- FAISS Vector Database
+- Top-K Semantic Retrieval
+- Retrieval-Augmented Generation (RAG)
+- Chat History
+- Clear Chat Functionality
+- Display Retrieved Context Chunks
 
 ---
 
-## 🏗️ System Architecture
-
-```text
-User
- │
- ▼
-Streamlit Chat Interface
- │
- ▼
-PDF Upload (Optional)
- │
- ▼
-Text Extraction using PyPDF
- │
- ▼
-Chunking using LangChain
- │
- ▼
-Store Chunks in Session State
- │
- ▼
-Retrieve Relevant Chunks
- │
- ▼
-Send Context + User Query
- │
- ▼
-Groq Llama 3.3
- │
- ▼
-AI Response
-```
-
-## ⚙️ How It Works
-
-### Chatbot Workflow
-
-1. User enters a message.
-2. Message is stored in Streamlit session state.
-3. Conversation history is sent to Groq's Llama 3.3 model.
-4. The AI generates a response.
-5. Response is displayed with a typing animation.
-
-### PDF Question Answering Workflow
-
-1. User uploads a PDF file.
-2. Text is extracted using PyPDF.
-3. The extracted text is split into smaller chunks.
-4. Chunks are stored in memory.
-5. When a question is asked, relevant chunks are retrieved using keyword matching.
-6. Retrieved context is sent to the LLM.
-7. The LLM generates an answer using the PDF content when available.
-
----
-
-## 📂 Project Structure
+## 🏗️ Project Structure
 
 ```text
 chatbot1/
@@ -108,41 +32,121 @@ chatbot1/
 ├── requirements.txt
 ├── README.md
 ├── .gitignore
-├── .env
 │
-└── .venv/
+├── data/
+│   └── sample.pdf
+│
+├── screenshots/
+│   └── demo.png
+│
+└── utils/
+    ├── loader.py
+    ├── embedder.py
+    └── retriever.py
 ```
 
 ---
 
-## 🚀 Installation
+## ⚙️ Technologies Used
+
+- Python
+- Streamlit
+- Groq API
+- Llama 3.3 70B Versatile
+- PyPDF
+- LangChain Text Splitters
+- Sentence Transformers
+- FAISS
+- NumPy
+
+---
+
+## 🔄 How the RAG Pipeline Works
+
+### Step 1: Upload PDF
+
+The user uploads a PDF document through the Streamlit interface.
+
+### Step 2: Extract Text
+
+Text is extracted from the PDF using PyPDF.
+
+### Step 3: Chunking
+
+The extracted text is split into smaller chunks using LangChain's RecursiveCharacterTextSplitter.
+
+Configuration:
+
+```python
+chunk_size = 500
+chunk_overlap = 50
+```
+
+This overlap helps preserve context between neighboring chunks.
+
+### Step 4: Create Embeddings
+
+Each chunk is converted into vector embeddings using:
+
+```text
+all-MiniLM-L6-v2
+```
+
+from Sentence Transformers.
+
+### Step 5: Store in FAISS
+
+The embeddings are stored in a FAISS vector index for efficient similarity search.
+
+### Step 6: Retrieve Relevant Chunks
+
+When a user asks a question:
+
+- The query is embedded
+- Similar chunks are retrieved from FAISS
+- Top-K chunks are selected
+
+### Step 7: Generate Response
+
+The retrieved chunks are provided as context to Groq's Llama 3.3 model, which generates the final answer.
+
+---
+
+## 📄 What Document Did You Use and Why?
+
+I used a PDF document containing Prompt Engineering concepts and techniques.
+
+This document was selected because it contains structured educational content that can effectively demonstrate semantic retrieval and document question-answering capabilities.
+
+---
+
+## 🧠 Which Embedding Model Did You Use?
+
+Sentence Transformers:
+
+```text
+all-MiniLM-L6-v2
+```
+
+This model generates compact semantic embeddings that work well for similarity search and retrieval tasks.
+
+---
+
+## 📸 Screenshot
+
+### Application Demo
+
+![Demo](screenshots/demo.png)
+
+---
+
+## ▶️ Installation
 
 ### Clone Repository
 
 ```bash
-git clone https://github.com/jaswanth07m/chatbot1
-
+git clone https://github.com/jaswanth07m/chatbot1.git
 cd chatbot1
-```
-
-### Create Virtual Environment
-
-```bash
-python -m venv .venv
-```
-
-### Activate Environment
-
-Windows:
-
-```bash
-.venv\Scripts\activate
-```
-
-Linux/Mac:
-
-```bash
-source .venv/bin/activate
 ```
 
 ### Install Dependencies
@@ -156,7 +160,7 @@ pip install -r requirements.txt
 Create a `.env` file:
 
 ```env
-GROQ_API_KEY=your_api_key_here
+GROQ_API_KEY=your_groq_api_key
 ```
 
 ### Run Application
@@ -167,54 +171,30 @@ streamlit run app.py
 
 ---
 
-## 📖 Example Use Cases
+## 💬 Example Questions
 
-### Study Assistant
+After uploading a PDF, users can ask:
 
-Upload course notes and ask:
-
-```text
-Explain Binary Search
-```
-
-### PDF Summarization
-
-Upload a document and ask:
-
-```text
-Summarize this PDF
-```
-
-### Documentation Assistant
-
-Upload technical documentation and ask questions about it.
-
----
-
-## 🎯 Key Learnings
-
-Through this project I learned:
-
-* Building AI applications with Streamlit
-* Integrating Large Language Models using APIs
-* Managing application state with Streamlit Session State
-* Processing PDF documents in Python
-* Implementing a basic Retrieval-Augmented Generation (RAG) pipeline
-* Creating interactive and responsive user interfaces
-* Working with prompt engineering and context injection
+- Summarize this document
+- What is the main topic?
+- Explain the key concepts
+- List important points
+- What does the document say about X?
 
 ---
 
 ## 🔮 Future Improvements
 
-* Semantic Search using FAISS
-* Vector Embeddings
-* Multi-PDF Support
-* PDF Summarization Button
-* Voice Input and Output
-* Chat Export Feature
-* Multiple LLM Support (OpenAI, Gemini, Groq)
-* User Authentication
+If given more time, I would add:
+
+- Multi-PDF Support
+- Website URL Ingestion
+- Persistent Vector Database
+- Semantic Re-ranking
+- Hybrid Search
+- Voice Input
+- Conversation Memory Across Sessions
+- Deployment on Streamlit Cloud
 
 ---
 
@@ -222,5 +202,4 @@ Through this project I learned:
 
 Jaswanth
 
-Built as a learning project to explore AI application development, Retrieval-Augmented Generation (RAG), and LLM integration.
-"""
+Built as part of an AI/LLM Internship Assignment.
